@@ -48,5 +48,11 @@ fn main() {
           println!("{}, {}cm", name, length);
       }
     }
+
+    let a = 1;
+    let b = 0.2;
+    // let z = a + b;
+
+
   }
  
