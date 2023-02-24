@@ -234,21 +234,66 @@ fn main() {
 
 ## String
 
+### Slices
+
+字符串切片 `&str` ：对 `String` 类型中某一部分的引用。如果无法保证索引的字节刚好落在字符的边界上，会引起程序崩溃。
+
+```rust
+let s = String::from("hello world");
+let hello = &s[0..5];
+let world = &s[6..11];
+```
+
+其他切片，如数组，也是一样的。如果使用切片时不加 `&` 会有 size cannot be known 的报错，因为切片的长度无法在编译期得知，因此无法直接使用切片类型。
+
+- 一个切片引用占用了2个字大小的内存空间，字的大小取决于处理器架构（x86-64下8字节）
+- 第一个字是指向数据的指针，第二个字是切片的长度。
+
+```rust
+let a = [1, 2, 3, 4, 5];
+let slice = &a[1..3];
+assert_eq!(slice, &[2, 3]);
+```
+
+字符串字面量是切片，该切片指向了程序可执行文件中被硬编码的文本（大小未知）的某个点。字符串字面量是不可变的，因为 `&str` 是一个不可变引用。
+
 ```rust
 let s1 = "hello" // 此处 s 类型为 &str ，是不可变的字符串字面值，存储在？
 let mut s2 = String::from("hello"); // 此处 s2 为动态字符串类型，分配在堆上，可以进行修改
 s2.push_str(" world!");
 ```
 
-关于 `String` 类型：
+### String 类型
 
-- 由存储在栈中的堆指针、字符串长度、字符串容量共同组成
-- 堆指针指向了真实存储字符串内容的堆内存
-- 容量是堆内存分配空间的大小
-- 长度是目前已经使用的大小
+[干货描述](https://course.rs/basic/compound-type/string-slice.html#%E4%BB%80%E4%B9%88%E6%98%AF%E5%AD%97%E7%AC%A6%E4%B8%B2)，以及 [字符串的操作](https://course.rs/basic/compound-type/string-slice.html#%E6%93%8D%E4%BD%9C%E5%AD%97%E7%AC%A6%E4%B8%B2)。
 
-- `"hello".to_string()`
-- `as_str()`
+- 事实上 String 是一个智能指针，它作为一个结构体存储在栈上，然后指向存储在堆上的字符串底层数据
+- 存储在栈上的智能指针结构体由三部分组成：一个指针只指向堆上的字节数组、已分配的容量 capacity、已使用的长度（已使用的长度小于等于已分配的容量，当容量不够时，会重新分配内存空间）
+- 不允许 `s[0]` 这样的字符串索引，和 utf-8 的实现方式以及性能表现有关，可以用切片 `&s[0..1]`
+- 变量在离开作用域后，自动调用 `drop` 释放其占用的内存
+
+和 `&str` 的转换
+
+```rust
+fn main(){
+    let s = "hello".to_string();
+
+    let s = String::from("hello,world!");
+    say_hello(&s);
+    say_hello(&s[..]);
+    say_hello(s.as_str());
+}
+
+fn say_hello(s: &str) {
+    println!("{}",s);
+}
+```
+
+用 `+` 连接字符串的时候，如果想保留第一个字符串的所有权，可以写 `s3 = s1.clone() + &s2`
+
+- `&s[..]` 和 `&s` 的区别？
+- `&str` 和 `&String` 的区别？
+- `deref trait` 
 
 ## Lifetime
 
@@ -268,5 +313,30 @@ fn dangle() -> &String { // dangle 返回一个字符串的引用
 fn no_dangle() -> String {
     let s = String::from("hello");
     s
-} // String 的 所有权被转移给外面的调用者。
+} // String 的所有权被转移给外面的调用者。
 ```
+
+raw string
+
+```rust
+let raw_str = "Escapes don't work here: \x3F \u{211D}";
+// modify above line to make it work
+assert_eq!(raw_str, "Escapes don't work here: ? ℝ");
+
+// If you need quotes in a raw string, add a pair of #s
+let quotes = r#"And then I said: "There is no escape!""#;
+println!("{}", quotes);
+
+// If you need "# in your string, just use more #s in the delimiter.
+// You can use up to 65535 #s.
+let  delimiter = r###"A string with "# in it. And even "##!"###;
+println!("{}", delimiter);
+
+// Fill the blank
+let long_delimiter = r###"Hello, "##""###;
+assert_eq!(long_delimiter, "Hello, \"##\"")
+```
+
+## 编译器属性标记
+
+`#![...]` 将对整个文件有效, `#[...]` 只对该行下面的块有效
