@@ -5,7 +5,7 @@ fn main() {
 
     print!("{}", *p);
 
-    let a = [1,2,3];
+    let _a = [1,2,3];
     // let slice = a[1..3];
 
     // let s2 = s[1..3];
@@ -13,6 +13,12 @@ fn main() {
     // println!("{}", s3);
     let s = String::from("hello");
     str_test(&s);
+
+    let t = (500, 5.2, 1);
+    let (x, y, _) = t;
+    let z = t.2;
+
+    println!("{} {} {}", x, y, z) 
 }
 
 fn str_test(s : &str){

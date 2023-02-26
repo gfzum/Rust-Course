@@ -6,7 +6,7 @@ Personal Rust learning use, from [Rust Course](https://course.rs/about-book.html
 
 暂时不用的变量可以在变量名前加 `_` 以规避编译器提醒，或者在函数前添加 `#[allow(unused_variables)]`。
 
-结构式复制和变量匹配：
+结构式复制和模式匹配：
 
 ```rust
 struct Struct {
@@ -295,6 +295,27 @@ fn say_hello(s: &str) {
 - `&str` 和 `&String` 的区别？
 - `deref trait` 
 
+raw string
+
+```rust
+let raw_str = "Escapes don't work here: \x3F \u{211D}";
+// modify above line to make it work
+assert_eq!(raw_str, "Escapes don't work here: ? ℝ");
+
+// If you need quotes in a raw string, add a pair of #s
+let quotes = r#"And then I said: "There is no escape!""#;
+println!("{}", quotes);
+
+// If you need "# in your string, just use more #s in the delimiter.
+// You can use up to 65535 #s.
+let  delimiter = r###"A string with "# in it. And even "##!"###;
+println!("{}", delimiter);
+
+// Fill the blank
+let long_delimiter = r###"Hello, "##""###;
+assert_eq!(long_delimiter, "Hello, \"##\"")
+```
+
 ## Lifetime
 
 可以解决悬垂引用 (Dangling References) 的问题
@@ -316,26 +337,24 @@ fn no_dangle() -> String {
 } // String 的所有权被转移给外面的调用者。
 ```
 
-raw string
+## Compound types
+
+### tuple & struct
+
+元组：多种类型组合到一起，长度固定，顺序固定。可以用模式匹配或 `.` 获取值。
 
 ```rust
-let raw_str = "Escapes don't work here: \x3F \u{211D}";
-// modify above line to make it work
-assert_eq!(raw_str, "Escapes don't work here: ? ℝ");
+fn main() {
+    let t: (i32, f64, u8) = (500, 6.4, 1);
+    let (x, y, _) = t;
+    let z = t.2;
+}
 
-// If you need quotes in a raw string, add a pair of #s
-let quotes = r#"And then I said: "There is no escape!""#;
-println!("{}", quotes);
-
-// If you need "# in your string, just use more #s in the delimiter.
-// You can use up to 65535 #s.
-let  delimiter = r###"A string with "# in it. And even "##!"###;
-println!("{}", delimiter);
-
-// Fill the blank
-let long_delimiter = r###"Hello, "##""###;
-assert_eq!(long_delimiter, "Hello, \"##\"")
 ```
+
+### Enum
+
+### Array
 
 ## 编译器属性标记
 
