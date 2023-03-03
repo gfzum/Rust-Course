@@ -337,6 +337,8 @@ struct
 - tuple struct
 - unit struct
 
+默认所有字段都是私有的，只对当前文件公开，使用 `pub` 进行公开。
+
 `dbg!` 会拿走表达式的所有权，打印出相应的文件名、行号、表达式结果等 debug 信息（在 stderr 中），并把表达式值的所有权返回。
 
 ```rust
@@ -357,9 +359,40 @@ fn main() {
 }
 ```
 
-### Enum
+### method
 
-option
+`&self` 是 `self: &Self` 的简写（注意大小写）。在一个 `impl` 块内，`Self` 指代被实现方法的结构体类型，`self` 指代此类型的实例。
+
+`self` 依然严格遵守所有权规则
+
+- `self` 表示 `Rectangle` 的所有权转移到该方法中，这种形式用的较少
+- `&self` 表示该方法对 `Rectangle` 的不可变借用
+- `&mut self` 表示可变借用
+
+为枚举类、特征也可以实现方法。
+
+```rust
+pub struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+impl Rectangle {
+    // 关联函数：没有 self，但在 impl 中和结构体紧密相连，需要用 :: 调用
+    pub fn new(width: u32, height: u32) -> Self {
+        Rectangle { width, height }
+    }
+
+    pub fn width(&self) -> u32 {
+        return self.width;
+    }
+}
+
+fn main() {
+    let rect1 = Rectangle::new(30, 50);
+    println!("{}", rect1.width());
+}
+```
 
 ### Array
 
@@ -439,6 +472,42 @@ println!("{}", v); //8
 ```
 
 ## Pattern Match
+
+```rust
+match target {
+    模式1 => 表达式1,
+    模式2 => {
+        语句1;
+        语句2;
+        表达式2
+    },
+    _ => 表达式3
+}
+```
+
+match 本身也是一个表达式，因此可以用它来赋值。
+
+### Enum
+
+option
+
+### if let
+
+```rust
+let v = Some(3u8);
+match v {
+    Some(3) => println!("three"),
+    _ => (),
+}
+
+if let Some(3) = v {
+    println!("three");
+}
+```
+
+## Generics
+
+## Trait
 
 
 
