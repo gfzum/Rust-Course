@@ -18,7 +18,14 @@ fn main() {
     let (x, y, _) = t;
     let z = t.2;
 
-    println!("{} {} {}", x, y, z) 
+    println!("{} {} {}", x, y, z);
+
+    let a = 2.0;
+    let _ = a.abs();    
+
+    let s = String :: from("abcde");
+    // let slice = s[1..2];
+
 }
 
 fn str_test(s : &str){

@@ -244,7 +244,7 @@ let hello = &s[0..5];
 let world = &s[6..11];
 ```
 
-其他切片，如数组，也是一样的。如果使用切片时不加 `&` 会有 size cannot be known 的报错，因为切片的长度无法在编译期得知，因此无法直接使用切片类型。
+其他切片，如数组，也是一样的。如果使用切片时不加 `&` 会有 size cannot be known 的报错，因为切片的长度无法在编译期得知，因此无法直接使用切片类型。切片类型 `[T]` 拥有不固定的大小，而切片引用类型 `&[T]` 则具有固定的大小，因为 Rust 很多时候都需要固定大小数据类型，因此 `&[T]` 更有用。
 
 - 一个切片引用占用了2个字大小的内存空间，字的大小取决于处理器架构（x86-64下8字节）
 - 第一个字是指向数据的指针，第二个字是切片的长度。
@@ -293,7 +293,7 @@ fn say_hello(s: &str) {
 
 - `&s[..]` 和 `&s` 的区别？
 - `&str` 和 `&String` 的区别？
-- `deref trait` 
+- `deref trait`
 
 raw string
 
@@ -316,6 +316,132 @@ let long_delimiter = r###"Hello, "##""###;
 assert_eq!(long_delimiter, "Hello, \"##\"")
 ```
 
+## Compound types
+
+### tuple & struct
+
+元组：多种类型组合到一起，长度固定，顺序固定。可以用模式匹配或 `.` 获取值。
+
+```rust
+fn main() {
+    let t: (i32, f64, u8) = (500, 6.4, 1);
+    let (x, y, _) = t;
+    let z = t.2;
+}
+
+```
+
+struct
+
+- standard
+- tuple struct
+- unit struct
+
+`dbg!` 会拿走表达式的所有权，打印出相应的文件名、行号、表达式结果等 debug 信息（在 stderr 中），并把表达式值的所有权返回。
+
+```rust
+#[derive(Debug)]
+struct Rectangle {
+    width: u32,
+    height: u32,
+}
+
+fn main() {
+    let scale = 2;
+    let rect1 = Rectangle {
+        width: dbg!(30 * scale),
+        height: 50,
+    };
+
+    dbg!(&rect1);
+}
+```
+
+### Enum
+
+option
+
+### Array
+
+```rust
+fn main() {
+  // 编译器自动推导出one的类型（根据后面的 arrays）
+  let one             = [1, 2, 3];
+  // 显式类型标注
+  let two: [u8; 3]    = [1, 2, 3];
+  let blank1          = [0; 3];
+  let blank2: [u8; 3] = [0; 3];
+
+  // arrays是一个二维数组，其中每一个元素都是一个数组，元素类型是[u8; 3]
+  let arrays: [[u8; 3]; 4]  = [one, two, blank1, blank2];
+
+  // 借用arrays的元素用作循环中
+  for a in &arrays {
+    print!("{:?}: ", a);
+    // 将a变成一个迭代器，用于循环
+    // 你也可以直接用for n in a {}来进行循环
+    for n in a.iter() {
+      print!("\t{} + 10 = {}", n, n+10);
+    }
+
+    let mut sum = 0;
+    // 0..a.len,是一个 Rust 的语法糖，其实就等于一个数组，元素是从0,1,2一直增加到到a.len-1
+    for i in 0..a.len() {
+      sum += a[i];
+    }
+    println!("\t({:?} = {})", a, sum);
+  }
+}
+```
+
+Rust-Course 的总结：
+
+- 数组类型容易跟数组切片混淆，`[T;n]` 描述了一个数组的类型，而 `[T]` 描述了切片的类型， 因为切片是运行期的数据结构，它的长度无法在编译期得知，因此不能用 `[T;n]` 的形式去描述
+- `[u8; 3]` 和 `[u8; 4]` 是不同的类型，数组的长度也是类型的一部分
+- 在实际开发中，使用最多的是数组切片 `[T]` ，我们往往通过引用的方式去使用 `&[T]` ，因为后者有固定的类型大小
+
+## Control
+
+- `if` 语句块是表达式
+- 用 `if` 来赋值时，要保证每个分支返回的类型一样（或结合 for continue）
+
+循环
+
+- `for _ in 0..=10` 到10，执行11次。
+- 使用 `for` 时往往使用集合的引用形式，否则所有权将会被转移，除非是实现了 `copy trait` 的数组，如 `[i32;10]`。
+- 如果想在循环中修改元素，使用 `mut` 关键字：
+- 直接循环集合中的元素比用下标索引循环的 `for` 性能更优，因为是连续访问且不用边界检查
+- `loop` = 无限循环的 `while`
+
+```rust
+let mut counter = 0;
+let result = loop { // loop 是一个表达式
+    counter += 1;
+    if counter == 10 {
+        break counter * 2; // 类似 return，赋值给 result
+    }
+};
+println!("The result is {}", result);
+```
+
+[表达式使用](https://course.rs/appendix/expressions.html#if%E8%A1%A8%E8%BE%BE%E5%BC%8F)
+
+```rust
+let mut v = 0;
+for i in 1..10 {
+    v = if i == 9 {
+        continue
+    } else {
+        i
+    }
+}
+println!("{}", v); //8
+```
+
+## Pattern Match
+
+
+
 ## Lifetime
 
 可以解决悬垂引用 (Dangling References) 的问题
@@ -336,25 +462,6 @@ fn no_dangle() -> String {
     s
 } // String 的所有权被转移给外面的调用者。
 ```
-
-## Compound types
-
-### tuple & struct
-
-元组：多种类型组合到一起，长度固定，顺序固定。可以用模式匹配或 `.` 获取值。
-
-```rust
-fn main() {
-    let t: (i32, f64, u8) = (500, 6.4, 1);
-    let (x, y, _) = t;
-    let z = t.2;
-}
-
-```
-
-### Enum
-
-### Array
 
 ## 编译器属性标记
 
