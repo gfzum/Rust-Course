@@ -509,7 +509,166 @@ if let Some(3) = v {
 
 ## Trait
 
+类似接口，定义了一个可以被共享的行为。如果要使用一个特征的方法，需要将该特征引入当前的作用域中
 
+孤儿规则：如果要为类型 A 实现特征 T，那么 A 或者 T 至少有一个是在当前作用域中定义的。
+
+默认实现允许调用相同特征中的其他方法，哪怕这些方法没有默认实现。如此，特征可以提供很多有用的功能而只需要实现指定的一小部分内容。
+
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String; //也可以写一个默认实现
+}
+
+pub struct Weibo {
+    pub username: String,
+    pub content: String
+}
+
+impl Summary for Weibo {
+    fn summarize(&self) -> String {
+        format!("{}发表了微博{}", self.username, self.content)
+    }
+}
+
+fn main() {
+    let weibo = Weibo{username: "sunface".to_string(),content: "好像微博没Tweet好用".to_string()};
+    println!("{}",weibo.summarize());
+}
+
+```
+
+### 特征约束（trait bound）
+
+```rust
+pub fn notify(item: &(impl Summary + Display)) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+pub fn notify<T: Summary + Display>(item1: &T, item2: &T) {}
+
+// where 约束
+fn some_function<T, U>(t: &T, u: &U) -> i32
+    where T: Display + Clone,
+          U: Clone + Debug
+{}
+
+// 指定类型 + 特征实现方法
+impl<T: Display + PartialOrd> Pair<T> {
+    fn cmp_display(&self) {
+        if self.x >= self.y {
+            println!("The largest member is x = {}", self.x);
+        } else {
+            println!("The largest member is y = {}", self.y);
+        }
+    }
+}
+
+// 有条件的实现特征，标准库中为任何实现了 Display 特征的类型实现了 ToString 特征
+impl<T: Display> ToString for T {
+    // --snip--
+}
+```
+
+### derive 派生特征
+
+被 derive 标记的对象会自动实现对应的默认特征代码，继承相应的功能，如 `#[derive(Debug)]` 。
+
+### 函数返回中的 impl trait
+
+```rust
+fn returns_summarizable() -> impl Summary {
+    Weibo {
+        username: String::from("sunface"),
+        content: String::from(
+            "m1 max太厉害了，电脑再也不会卡",
+        )
+    }
+}
+```
+
+但是此处返回和特征约束后的代码中只能有一个具体的类型，不能返回两个不同的类型。即代码涉及到的元素必须是 `Weibo` 或其它某一个结构体对象。如果只需要同质（相同类型）集合，这样写性能更好。想要同时存在多个不同的对象，可以使用特征对象（运行时会从 `vtable` 中查找需要调用的方法）。
+
+### 特征对象
+
+Rust 没有继承！
+
+特征对象指向实现了某个特征的类型的实例，映射关系存储在一张表中，可以在运行时通过特征对象找到具体调用的类型方法。
+
+可以通过 `&` 引用或者 `Box<T>` 智能指针的方式来创建特征对象。
+
+```rust
+trait Draw {
+    fn draw(&self) -> String;
+}
+
+// 若 T 实现了 Draw 特征， 则调用该函数时传入的 Box<T> 可以被隐式转换成函数参数签名中的 Box<dyn Draw>
+fn draw1(x: Box<dyn Draw>) {
+    // 由于实现了 Deref 特征，Box 智能指针会自动解引用为它所包裹的值，然后调用该值对应的类型上定义的 `draw` 方法
+    x.draw();
+}
+
+fn draw2(x: &dyn Draw) {
+    x.draw();
+}
+```
+
+- `draw1` 函数的参数是 `Box<dyn Draw>` 形式的特征对象，其可以通过 `Box::new(x)` 的方式创建
+- `draw2` 函数的参数是 `&dyn Draw` 形式的特征对象，该特征对象是通过 `&x` 的方式创建的
+- `dyn` 关键字只用在特征对象的类型声明上，在创建时无需使用 `dyn`
+
+因此，可以使用特征对象来代表泛型或具体的类型。
+
+```rust
+// 实现多个不同 ui 组件的统一渲染
+
+pub struct Screen {
+    pub components: Vec<Box<dyn Draw>>,
+}
+
+impl Screen {
+    pub fn run(&self) {
+        for component in self.components.iter() {
+            component.draw();
+        }
+    }
+}
+
+fn main() {
+    let screen = Screen {
+        components: vec![
+            Box::new(SelectBox {
+                width: 75, height: 10,
+            }),
+            Box::new(Button {
+                width: 50, height: 10,
+            }),
+        ],
+    };
+    screen.run();
+}
+
+```
+
+`dyn` 不能单独作为特征对象的定义，因为特征对象可以是任意实现了某个特征的类型，编译器在编译期不知道该类型的大小，不同的类型大小是不同的，而 `&dyn` 和 `Box<dyn>` 在编译器都是已知大小的。
+
+不是所有特征都能拥有特征对象，只有对象安全的特征才行:
+
+- 方法的返回类型不能是 `Self`
+- 方法没有任何泛型参数
+
+运行时仍然需要确定实际的具体类型。
+
+### 特征对象的动态分发
+
+- 泛型：静态分发 static dispatch
+- 特征对象：动态分发 dynamic dispatch
+
+[todo](https://course.rs/basic/trait/trait-object.html#%E7%89%B9%E5%BE%81%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%8A%A8%E6%80%81%E5%88%86%E5%8F%91)
+
+### 深入了解
+
+## 集合 Collections
 
 ## Lifetime
 

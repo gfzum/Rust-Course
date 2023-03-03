@@ -20,7 +20,7 @@ fn main() {
 
     println!("{} {} {}", x, y, z);
 
-    let a = 2.0;
+    let a = 2.0_f64;
     let _ = a.abs();    
 
     let s = String :: from("abcde");
@@ -31,3 +31,9 @@ fn main() {
 fn str_test(s : &str){
     print!("{}", s);
 }
+
+
+// pub struct Screen {
+//     pub components: Vec<Box<dyn Draw>>,
+// }
+
